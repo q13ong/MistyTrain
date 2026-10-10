@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fog_train
+      POSTGRES_USER: fog_train
+      POSTGRES_PASSWORD: change-me
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fog_train -d fog_train"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      PUBLIC_ORIGIN: http://localhost:3000
+      SESSION_SECRET: replace-with-a-long-random-secret
+      DATABASE_URL: postgres://fog_train:change-me@postgres:5432/fog_train
+      DEFAULT_TURN_TIMEOUT_MS: 60000
+      RECONNECT_GRACE_MS: 45000
+      MAX_SPECTATORS: 32
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres-data:
